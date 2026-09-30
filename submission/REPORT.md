@@ -61,6 +61,9 @@
 - **Version/label baseline:**
 - **Version/label candidate:**
 - **Trace ID của mỗi version:**
+testing v2 (candidate - production): 3a377234c69296b07f3c7fcef0c22a4d
+testing v1 (prod - baseline): 0b8fad3211455f7a4a0b82cb8c8c3185
+
 - **Cách promote và rollback `production`:**
 
 ## 6. Dashboard, SLO và alerts

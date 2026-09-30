@@ -1057,7 +1057,11 @@ Thực hiện chu trình đổi nhãn và lưu ảnh minh chứng:
 ---
 
 ##### **7. Mở Dashboard runtime và chụp đủ 6 Panel `evidence/11-dashboard-overview.png`:**
-1. Mở giao diện Dashboard giám sát runtime (Streamlit, Gradio, Grafana, notebook hoặc script vẽ biểu đồ từ file `data/logs.jsonl`).
+1. Khởi động ứng dụng Dashboard Streamlit được thiết kế chuẩn theo hợp đồng `config/dashboard.yaml`:
+   ```bash
+   uv run streamlit run scripts/dashboard.py
+   ```
+   Mở trình duyệt truy cập: `http://localhost:8501` (hoặc cổng mà Streamlit thông báo).
 2. **Yêu cầu ảnh chụp:** Hiển thị đầy đủ **6 panel** theo hợp đồng `config/dashboard.yaml`:
    1. **Latency:** Đồ thị đường P50, P95, P99 và **TTFT P95** kèm đường ngưỡng SLO `3000ms`.
    2. **Traffic:** Số lượng request / tốc độ gọi theo phút (rate per minute).

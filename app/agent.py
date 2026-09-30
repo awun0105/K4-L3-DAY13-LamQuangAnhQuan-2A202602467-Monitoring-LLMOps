@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 from . import metrics
@@ -21,6 +22,16 @@ class AgentResult:
     tokens_out: int
     cost_usd: float
     quality_score: float
+
+
+@contextmanager
+def _safe_observation(client, **kwargs):
+    """Bọc an toàn để tạo child observation khi client Langfuse hỗ trợ API v4."""
+    if hasattr(client, "start_as_current_observation") and callable(client.start_as_current_observation):
+        with client.start_as_current_observation(**kwargs) as obs:
+            yield obs
+    else:
+        yield None
 
 
 class LabAgent:
@@ -51,7 +62,19 @@ class LabAgent:
             },
         ):
             started = time.perf_counter()
-            docs = retrieve(message)
+
+            # TODO (CP2): instrument retrieve() and FakeLLM.generate() as child
+            # observations. The nested generation must receive prompt, usage and cost.
+            with _safe_observation(
+                langfuse_client,
+                name="retrieval",
+                as_type="retriever",
+                input={"query": summarize_text(message)},
+            ) as retrieval_obs:
+                docs = retrieve(message)
+                if retrieval_obs and hasattr(retrieval_obs, "update"):
+                    retrieval_obs.update(output={"docs_count": len(docs)})
+
             prompt = resolve_prompt(
                 langfuse_client,
                 feature=feature,
@@ -71,10 +94,25 @@ class LabAgent:
                 },
                 version=prompt.version,
             )
-            # TODO (CP2): instrument retrieve() and FakeLLM.generate() as child
-            # observations. The nested generation must receive prompt, usage and cost.
+
             with propagate_attributes(prompt=prompt.managed_prompt):
-                response = self.llm.generate(prompt.text)
+                with _safe_observation(
+                    langfuse_client,
+                    name="generation",
+                    as_type="generation",
+                    model=self.model,
+                    input={"prompt": summarize_text(prompt.text)},
+                ) as gen_obs:
+                    response = self.llm.generate(prompt.text)
+                    if gen_obs and hasattr(gen_obs, "update"):
+                        gen_obs.update(
+                            output={"answer_preview": summarize_text(response.text)},
+                            usage={
+                                "input": response.usage.input_tokens,
+                                "output": response.usage.output_tokens,
+                            },
+                        )
+
             quality_score = self._heuristic_quality(message, response.text, docs)
             latency_ms = int((time.perf_counter() - started) * 1000)
             cost_usd = self._estimate_cost(response.usage.input_tokens, response.usage.output_tokens)
