@@ -1,0 +1,15 @@
+[project]
+name = "k4-l3-day13-lamquanganhquan-2a202602467-monitoring-llmops"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.118.0",
+    "httpx==0.28.1",
+    "langfuse==4.15.6",
+    "pydantic==2.11.4",
+    "pytest==8.3.5",
+    "python-dotenv==1.1.0",
+    "pyyaml==6.0.3",
+    "structlog==25.4.0",
+    "uvicorn[standard]==0.37.0",
+]
